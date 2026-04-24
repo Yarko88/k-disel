@@ -30,13 +30,24 @@ function VideoHero() {
     <div className="relative h-dvh min-h-[520px] w-full overflow-hidden">
       <div className="absolute inset-0 z-0 bg-void">
         <video
-          className="h-full w-full object-contain"
+          className="absolute inset-0 h-full w-full scale-110 object-cover opacity-35 blur-2xl"
+          autoPlay
+          loop
+          muted
+          playsInline
+          src="/hero.mp4"
+          aria-hidden
+        />
+        <video
+          className="relative h-full w-full object-contain"
           autoPlay
           loop
           muted
           playsInline
           src="/hero.mp4"
         />
+        <div className="pointer-events-none absolute inset-y-0 left-0 w-36 bg-gradient-to-r from-void via-void/70 to-transparent" />
+        <div className="pointer-events-none absolute inset-y-0 right-0 w-36 bg-gradient-to-l from-void via-void/70 to-transparent" />
         <div className="absolute inset-0 bg-gradient-to-b from-void/80 via-void/30 to-void" />
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_50%_at_50%_0%,rgba(200,255,45,0.12),transparent_60%)] mix-blend-color" />
       </div>
