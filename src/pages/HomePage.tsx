@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState, type RefObject } from "react";
+import { useCallback, useEffect, useRef, useState, type RefObject } from "react";
 import { motion, useScroll, useTransform } from "framer-motion";
 import { Link } from "react-router-dom";
 import { ScrollProgress } from "../components/ScrollProgress";
@@ -17,6 +17,10 @@ const SERVICES = [
   "Полная чистка топливной системы",
 ];
 
+const CONTACT_TEL = "+79620208822";
+const CONTACT_PHONE = "+7 962 020 88 22";
+const CONTACT_MAP_URL = "https://yandex.ru/maps/-/CPGirW8j";
+
 const viewOpts = { once: true, margin: "-8% 0px" as const, amount: 0.15 as const };
 const fadeUp = {
   initial: { opacity: 0, y: 32 },
@@ -30,44 +34,74 @@ const listItem = {
   show: { opacity: 1, y: 0, skewY: 0, transition: { type: "spring" as const, stiffness: 120, damping: 20 } },
 };
 
-function MusicButton({
-  playing,
+function SoundButton({
+  enabled,
   onToggle,
 }: {
-  playing: boolean;
+  enabled: boolean;
   onToggle: () => void;
 }) {
   return (
     <button
       type="button"
       onClick={onToggle}
-      className="group fixed right-4 top-1/2 z-[10001] flex -translate-y-1/2 items-center justify-center sm:right-6"
-      aria-pressed={playing}
-      aria-label={playing ? "Выкл. музыку" : "Вкл. музыку"}
+      className="fixed bottom-4 right-4 z-[10001] flex items-center gap-2 border border-bone/25 bg-void/55 px-3 py-2 font-mono text-[0.65rem] uppercase tracking-[0.16em] text-bone/65 backdrop-blur-sm transition hover:border-amber-burst/50 hover:text-amber-burst sm:bottom-6 sm:right-6"
+      aria-pressed={enabled}
+      aria-label={enabled ? "Выключить звук" : "Включить звук"}
     >
-      <span className="flex h-14 w-14 items-center justify-center border-2 border-amber-burst/90 bg-iron/90 font-mono text-xs font-bold uppercase text-amber-burst transition group-hover:translate-x-0.5 group-hover:translate-y-0.5 group-active:scale-[0.98] sm:h-16 sm:w-16">
-        {playing ? "■" : "▶"}
+      <span className="text-xs">{enabled ? "🔊" : "🔇"}</span>
+      <span>
+        Звук {enabled ? "ON" : "OFF"}
       </span>
     </button>
   );
 }
 
-function useAudio(setPlaying: (v: boolean) => void) {
+function useAudio(soundEnabled: boolean, setSoundEnabled: (v: boolean) => void) {
   const ref = useRef<HTMLAudioElement | null>(null);
+
+  useEffect(() => {
+    const a = ref.current;
+    if (!a) return;
+    a.muted = !soundEnabled;
+    a.volume = 0.5;
+  }, [soundEnabled]);
+
+  useEffect(() => {
+    const a = ref.current;
+    if (!a) return;
+
+    const tryPlay = () => {
+      a.volume = 0.5;
+      a.muted = !soundEnabled;
+      void a.play().catch(() => {
+        /* Browser can block autoplay with sound until first user interaction */
+      });
+    };
+
+    tryPlay();
+    window.addEventListener("pointerdown", tryPlay, { once: true });
+    window.addEventListener("keydown", tryPlay, { once: true });
+
+    return () => {
+      window.removeEventListener("pointerdown", tryPlay);
+      window.removeEventListener("keydown", tryPlay);
+    };
+  }, []);
+
   const toggle = useCallback(() => {
     const a = ref.current;
     if (!a) return;
-    if (a.paused) {
-      a.volume = 0.5;
-      void a.play().then(
-        () => setPlaying(true),
-        () => setPlaying(false),
-      );
-    } else {
-      a.pause();
-      setPlaying(false);
+    const next = !soundEnabled;
+    setSoundEnabled(next);
+    a.muted = !next;
+    if (next && a.paused) {
+      void a.play().catch(() => {
+        /* If blocked, next user interaction will retry via listener above */
+      });
     }
-  }, [setPlaying]);
+  }, [setSoundEnabled, soundEnabled]);
+
   return { ref, toggle };
 }
 
@@ -182,7 +216,7 @@ function CtaBlock() {
           viewport={viewOpts}
           className="font-[family-name:var(--font-display)] text-4xl tracking-tight text-amber-burst sm:text-5xl md:text-6xl"
         >
-          СТОЙ, ГДЕ ЕСТЬ ДИАГНОСТИКА
+          НАШ ПРИОРИТЕТ КАЧЕСТВО
         </motion.h2>
         <motion.p
           initial={{ opacity: 0, y: 24 }}
@@ -200,12 +234,12 @@ function CtaBlock() {
           className="mt-8 flex flex-wrap items-center justify-center gap-4"
         >
           <motion.a
-            href="tel:+70000000000"
+            href={`tel:${CONTACT_TEL}`}
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
             className="inline-block border-2 border-amber-burst bg-amber-burst px-10 py-4 font-mono text-sm font-bold uppercase tracking-widest text-void"
           >
-            +7 (000) 000-00-00
+            {CONTACT_PHONE}
           </motion.a>
           <Link
             to="/zakaz-naryad"
@@ -214,22 +248,46 @@ function CtaBlock() {
             Заказ-наряд
           </Link>
         </motion.div>
-        <p className="mt-3 font-mono text-xs text-bone/35">Замените номер в атрибуте href + тексте</p>
+        <p className="mt-3 font-mono text-xs text-bone/55">
+          Адрес в Яндекс Картах:{" "}
+          <a
+            href={CONTACT_MAP_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-amber-burst underline underline-offset-4 hover:text-diesel"
+          >
+            Открыть карту
+          </a>
+        </p>
+        <motion.div
+          initial={{ opacity: 0, y: 18 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={viewOpts}
+          className="mx-auto mt-6 max-w-md overflow-hidden border-2 border-bone/20 bg-void/70"
+        >
+          <iframe
+            title="Карта проезда K-Diesel"
+            src={CONTACT_MAP_URL}
+            loading="lazy"
+            referrerPolicy="no-referrer-when-downgrade"
+            className="h-52 w-full"
+          />
+        </motion.div>
       </div>
     </section>
   );
 }
 
 export function HomePage() {
-  const [musicOn, setMusicOn] = useState(false);
-  const { ref: audioRef, toggle: toggleMusic } = useAudio(setMusicOn);
+  const [soundEnabled, setSoundEnabled] = useState(true);
+  const { ref: audioRef, toggle: toggleSound } = useAudio(soundEnabled, setSoundEnabled);
   const aboutRef = useRef<HTMLElement | null>(null);
 
   return (
     <>
-      <audio ref={audioRef} src="/ambient.mp3" loop preload="metadata" />
+      <audio ref={audioRef} src="/ambient.mp3" loop preload="auto" autoPlay />
       <ScrollProgress />
-      <MusicButton playing={musicOn} onToggle={toggleMusic} />
+      <SoundButton enabled={soundEnabled} onToggle={toggleSound} />
       <main id="top">
         <VideoHero />
         <Ticker />
