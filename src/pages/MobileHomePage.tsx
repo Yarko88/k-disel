@@ -1,119 +1,12 @@
-import { useCallback, useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { SERVICES } from "../data/services";
 
 const CONTACT_TEL = "+79620208822";
 const CONTACT_PHONE = "+7 962 020 88 22";
 const CONTACT_MAP_URL = "https://yandex.ru/maps/-/CPGirW8j";
-const AUTOPLAY_FADEOUT_MS = 20_000;
-
-function MobileSoundButton({
-  enabled,
-  onToggle,
-}: {
-  enabled: boolean;
-  onToggle: () => void;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onToggle}
-      className="fixed bottom-3 right-3 z-[10001] flex items-center gap-1.5 border border-bone/20 bg-void/45 px-2 py-1.5 font-mono text-[0.58rem] uppercase tracking-[0.14em] text-bone/55 backdrop-blur-sm transition hover:border-amber-burst/40 hover:text-amber-burst/90"
-      aria-pressed={enabled}
-      aria-label={enabled ? "Выключить звук" : "Включить звук"}
-    >
-      <span className="text-[0.62rem]">{enabled ? "🔊" : "🔇"}</span>
-      <span>Звук {enabled ? "ON" : "OFF"}</span>
-    </button>
-  );
-}
-
-function useAudio(soundEnabled: boolean, setSoundEnabled: (v: boolean) => void) {
-  const ref = useRef<HTMLAudioElement | null>(null);
-  const fadeIntervalRef = useRef<number | null>(null);
-
-  const clearFade = useCallback(() => {
-    if (fadeIntervalRef.current !== null) {
-      window.clearInterval(fadeIntervalRef.current);
-      fadeIntervalRef.current = null;
-    }
-  }, []);
-
-  const startWithFadeout = useCallback(() => {
-    const a = ref.current;
-    if (!a || !soundEnabled) return;
-
-    a.muted = false;
-    a.volume = 0.45;
-    void a.play()
-      .then(() => {
-        const startedAt = performance.now();
-        clearFade();
-        fadeIntervalRef.current = window.setInterval(() => {
-          const progress = Math.min((performance.now() - startedAt) / AUTOPLAY_FADEOUT_MS, 1);
-          a.volume = Math.max(0.45 * (1 - progress), 0);
-          if (progress >= 1) {
-            clearFade();
-            a.pause();
-            a.currentTime = 0;
-            setSoundEnabled(false);
-          }
-        }, 250);
-      })
-      .catch(() => {
-        // Mobile browsers can require first user interaction.
-      });
-  }, [clearFade, setSoundEnabled, soundEnabled]);
-
-  useEffect(() => {
-    const a = ref.current;
-    if (!a) return;
-    a.muted = !soundEnabled;
-    if (!soundEnabled) {
-      a.pause();
-      a.currentTime = 0;
-    }
-  }, [soundEnabled]);
-
-  useEffect(() => {
-    const tryAutoplay = () => startWithFadeout();
-    tryAutoplay();
-    window.addEventListener("pointerdown", tryAutoplay, { once: true });
-    window.addEventListener("keydown", tryAutoplay, { once: true });
-    return () => {
-      clearFade();
-      window.removeEventListener("pointerdown", tryAutoplay);
-      window.removeEventListener("keydown", tryAutoplay);
-    };
-  }, [clearFade, startWithFadeout]);
-
-  const toggle = useCallback(() => {
-    const a = ref.current;
-    if (!a) return;
-    clearFade();
-    const next = !soundEnabled;
-    setSoundEnabled(next);
-    a.muted = !next;
-    if (next) {
-      a.volume = 0.45;
-      void a.play().catch(() => {
-        // waits for user gesture if blocked
-      });
-    }
-  }, [clearFade, setSoundEnabled, soundEnabled]);
-
-  return { ref, toggle };
-}
-
 export function MobileHomePage() {
-  const [soundEnabled, setSoundEnabled] = useState(true);
-  const { ref: audioRef, toggle } = useAudio(soundEnabled, setSoundEnabled);
-
   return (
     <>
-      <audio ref={audioRef} src="/ambient.mp3" loop preload="auto" autoPlay />
-      <MobileSoundButton enabled={soundEnabled} onToggle={toggle} />
-
       <main id="top" className="relative z-10 px-4 pb-14 pt-20">
         <section className="relative overflow-hidden border-2 border-bone/15 bg-void/75">
           <video className="h-48 w-full object-cover opacity-65" autoPlay muted loop playsInline src="/hero.mp4" />

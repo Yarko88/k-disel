@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState, type RefObject } from "react";
+import { useRef, type RefObject } from "react";
 import { motion, useScroll, useTransform } from "framer-motion";
 import { Link } from "react-router-dom";
 import { ScrollProgress } from "../components/ScrollProgress";
@@ -11,7 +11,6 @@ const CONTACT_PHONE = "+7 962 020 88 22";
 const CONTACT_MAP_URL = "https://yandex.ru/maps/-/CPGirW8j";
 const CONTACT_MAP_EMBED_URL =
   "https://yandex.ru/map-widget/v1/?mode=search&text=K-Diesel%20Kozyrev%20Service&z=13";
-const AUTOPLAY_FADEOUT_MS = 20_000;
 
 const viewOpts = { once: true, margin: "-8% 0px" as const, amount: 0.15 as const };
 const fadeUp = {
@@ -25,115 +24,6 @@ const listItem = {
   hidden: { opacity: 0, y: 22, skewY: 1.5 as const },
   show: { opacity: 1, y: 0, skewY: 0, transition: { type: "spring" as const, stiffness: 120, damping: 20 } },
 };
-
-function SoundButton({
-  enabled,
-  onToggle,
-}: {
-  enabled: boolean;
-  onToggle: () => void;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onToggle}
-      className="fixed bottom-3 right-3 z-[10001] flex items-center gap-1.5 border border-bone/20 bg-void/45 px-2 py-1.5 font-mono text-[0.58rem] uppercase tracking-[0.14em] text-bone/55 backdrop-blur-sm transition hover:border-amber-burst/40 hover:text-amber-burst/90 sm:bottom-4 sm:right-4"
-      aria-pressed={enabled}
-      aria-label={enabled ? "Выключить звук" : "Включить звук"}
-    >
-      <span className="text-[0.62rem]">{enabled ? "🔊" : "🔇"}</span>
-      <span>
-        Звук {enabled ? "ON" : "OFF"}
-      </span>
-    </button>
-  );
-}
-
-function useAudio(soundEnabled: boolean, setSoundEnabled: (v: boolean) => void) {
-  const ref = useRef<HTMLAudioElement | null>(null);
-  const fadeIntervalRef = useRef<number | null>(null);
-
-  const clearFade = useCallback(() => {
-    if (fadeIntervalRef.current !== null) {
-      window.clearInterval(fadeIntervalRef.current);
-      fadeIntervalRef.current = null;
-    }
-  }, []);
-
-  const startWithFadeout = useCallback(() => {
-    const a = ref.current;
-    if (!a || !soundEnabled) return;
-
-    a.muted = false;
-    a.volume = 0.5;
-    void a.play()
-      .then(() => {
-        const startAt = performance.now();
-        clearFade();
-
-        fadeIntervalRef.current = window.setInterval(() => {
-          const now = performance.now();
-          const progress = Math.min((now - startAt) / AUTOPLAY_FADEOUT_MS, 1);
-          const nextVolume = 0.5 * (1 - progress);
-          a.volume = Math.max(nextVolume, 0);
-
-          if (progress >= 1) {
-            clearFade();
-            a.pause();
-            a.currentTime = 0;
-            setSoundEnabled(false);
-          }
-        }, 250);
-      })
-      .catch(() => {
-        /* Browser can block autoplay with sound until first interaction */
-      });
-  }, [clearFade, setSoundEnabled, soundEnabled]);
-
-  useEffect(() => {
-    const a = ref.current;
-    if (!a) return;
-    a.muted = !soundEnabled;
-    if (!soundEnabled) {
-      a.pause();
-      a.currentTime = 0;
-    }
-  }, [soundEnabled]);
-
-  useEffect(() => {
-    const tryAutoplay = () => {
-      startWithFadeout();
-    };
-
-    tryAutoplay();
-    window.addEventListener("pointerdown", tryAutoplay, { once: true });
-    window.addEventListener("keydown", tryAutoplay, { once: true });
-
-    return () => {
-      clearFade();
-      window.removeEventListener("pointerdown", tryAutoplay);
-      window.removeEventListener("keydown", tryAutoplay);
-    };
-  }, [clearFade, startWithFadeout]);
-
-  const toggle = useCallback(() => {
-    const a = ref.current;
-    if (!a) return;
-
-    clearFade();
-    const next = !soundEnabled;
-    setSoundEnabled(next);
-    a.muted = !next;
-    if (next) {
-      a.volume = 0.5;
-      void a.play().catch(() => {
-        /* If blocked, browser will allow after interaction */
-      });
-    }
-  }, [clearFade, setSoundEnabled, soundEnabled]);
-
-  return { ref, toggle };
-}
 
 function VideoHero() {
   return (
@@ -313,15 +203,11 @@ function CtaBlock() {
 }
 
 export function HomePage() {
-  const [soundEnabled, setSoundEnabled] = useState(true);
-  const { ref: audioRef, toggle: toggleSound } = useAudio(soundEnabled, setSoundEnabled);
   const aboutRef = useRef<HTMLElement | null>(null);
 
   return (
     <>
-      <audio ref={audioRef} src="/ambient.mp3" loop preload="auto" autoPlay />
       <ScrollProgress />
-      <SoundButton enabled={soundEnabled} onToggle={toggleSound} />
       <main id="top">
         <VideoHero />
         <Ticker />
