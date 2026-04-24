@@ -71,6 +71,14 @@ jobs:
               exit 1
             fi
 
+            mkdir -p "$HOME/.ssh"
+            chmod 700 "$HOME/.ssh"
+            if ! ssh-keygen -F github.com >/dev/null 2>&1; then
+              ssh-keyscan -H github.com >> "$HOME/.ssh/known_hosts"
+            fi
+            chmod 600 "$HOME/.ssh/known_hosts"
+            export GIT_SSH_COMMAND="ssh -o StrictHostKeyChecking=yes"
+
             REPO_SSH_URL="git@github.com:${GITHUB_REPOSITORY}.git"
             PARENT_DIR="$(dirname "$VM_PATH")"
             mkdir -p "$PARENT_DIR"
