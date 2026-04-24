@@ -1,0 +1,23 @@
+# Альтернатива GitHub: GitLab CI на образе Ubuntu.
+image: node:22-bookworm
+
+variables:
+  NPM_CONFIG_CACHE: "$CI_PROJECT_DIR/.npm"
+
+cache:
+  key: ${CI_COMMIT_REF_SLUG}
+  paths:
+    - .npm/
+
+stages:
+  - build
+
+build:
+  stage: build
+  script:
+    - npm ci
+    - npm run build
+  artifacts:
+    paths:
+      - dist
+    expire_in: 1 week
