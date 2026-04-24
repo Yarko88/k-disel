@@ -57,12 +57,24 @@ jobs:
           script: |
             set -euo pipefail
 
+            # Ensure npm exists on a clean VM user.
+            if ! command -v npm >/dev/null 2>&1; then
+              if [ ! -s "$HOME/.nvm/nvm.sh" ]; then
+                curl -fsSL https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.1/install.sh | bash
+              fi
+            fi
+
             if [ -s "$HOME/.nvm/nvm.sh" ]; then
               . "$HOME/.nvm/nvm.sh"
             fi
             if command -v nvm >/dev/null 2>&1; then
               nvm install "$NODE_VERSION" >/dev/null
               nvm use "$NODE_VERSION" >/dev/null
+            fi
+
+            if ! command -v npm >/dev/null 2>&1; then
+              echo "npm is still unavailable after nvm setup"
+              exit 1
             fi
 
             VM_PATH="$(printf '%s' "${VM_PATH:-}" | tr -d '\r')"
