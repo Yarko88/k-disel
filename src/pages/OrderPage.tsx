@@ -2,8 +2,14 @@ import { useState } from "react";
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
 
-export function OrderPage() {
+type OrderPageProps = {
+  mode?: "desktop" | "mobile";
+};
+
+export function OrderPage({ mode = "desktop" }: OrderPageProps) {
   const [submitted, setSubmitted] = useState(false);
+  const homePath = mode === "mobile" ? "/mobile" : "/desktop";
+  const compact = mode === "mobile";
 
   return (
     <div className="relative min-h-dvh">
@@ -20,7 +26,9 @@ export function OrderPage() {
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_70%_50%_at_50%_20%,rgba(200,255,45,0.06),transparent_55%)]" />
       </div>
 
-      <main className="relative z-10 mx-auto max-w-2xl px-4 pb-16 pt-24 sm:px-6 md:pt-28">
+      <main
+        className={`relative z-10 mx-auto pb-16 pt-24 ${compact ? "max-w-xl px-4" : "max-w-2xl px-4 sm:px-6 md:pt-28"}`}
+      >
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -36,7 +44,7 @@ export function OrderPage() {
             </h1>
           </div>
           <Link
-            to="/"
+            to={homePath}
             className="border-2 border-bone/25 bg-void/60 px-3 py-2 font-mono text-[0.65rem] uppercase tracking-wider text-bone/70 hover:border-amber-burst/50 hover:text-amber-burst"
           >
             ← На главную
@@ -47,7 +55,7 @@ export function OrderPage() {
           initial={{ opacity: 0, y: 24 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1, duration: 0.45 }}
-          className="space-y-4 border-2 border-bone/15 bg-smoke/75 p-5 shadow-[6px_6px_0_0_rgba(0,0,0,0.4)] backdrop-blur-sm sm:p-7"
+          className={`space-y-4 border-2 border-bone/15 bg-smoke/75 p-5 shadow-[6px_6px_0_0_rgba(0,0,0,0.4)] backdrop-blur-sm ${compact ? "" : "sm:p-7"}`}
           onSubmit={(e) => {
             e.preventDefault();
             setSubmitted(true);

@@ -2,20 +2,9 @@ import { useCallback, useEffect, useRef, useState, type RefObject } from "react"
 import { motion, useScroll, useTransform } from "framer-motion";
 import { Link } from "react-router-dom";
 import { ScrollProgress } from "../components/ScrollProgress";
+import { SERVICES } from "../data/services";
 
 const BRANDS = ["BOSCH", "DENSO", "DELPHI", "Siemens/Continental", "VDO"];
-
-const SERVICES = [
-  "Ремонт дизельных систем Common Rail",
-  "Компьютерная диагностика двигателя",
-  "Инструментальная диагностика двигателя",
-  "Снятие и установка топливной аппаратуры",
-  "Ремонт насосов Common Rail",
-  "Ремонт пьезо-форсунок (Piezo)",
-  "Адаптация насоса / форсунок",
-  "Прописка кода коррекции форсунки в ECU",
-  "Полная чистка топливной системы",
-];
 
 const CONTACT_TEL = "+79620208822";
 const CONTACT_PHONE = "+7 962 020 88 22";
@@ -200,7 +189,7 @@ function VideoHero() {
           className="mt-8"
         >
           <Link
-            to="/zakaz-naryad"
+            to="/desktop/zakaz-naryad"
             className="inline-block border-2 border-diesel/80 bg-void/70 px-5 py-2.5 font-mono text-xs font-semibold uppercase tracking-[0.2em] text-diesel backdrop-blur-sm transition hover:border-amber-burst hover:text-amber-burst"
           >
             Заказ-наряд →
@@ -287,7 +276,7 @@ function CtaBlock() {
             {CONTACT_PHONE}
           </motion.a>
           <Link
-            to="/zakaz-naryad"
+            to="/desktop/zakaz-naryad"
             className="inline-block border-2 border-bone/30 bg-void/60 px-8 py-4 font-mono text-sm font-bold uppercase tracking-widest text-bone/90 backdrop-blur-sm transition hover:border-diesel/60 hover:text-diesel"
           >
             Заказ-наряд
@@ -423,16 +412,18 @@ export function HomePage() {
               viewport={viewOpts}
               variants={listContainer}
             >
-              {SERVICES.map((s) => (
+              {SERVICES.map((service) => (
                 <motion.li
-                  key={s}
+                  key={service.slug}
                   className="group border-2 border-bone/10 bg-smoke/60 py-3 pl-2 pr-4 font-mono text-sm text-bone/90 [clip-path:polygon(0_0,100%_0,100%_calc(100%-8px),calc(100%-8px)_100%,0_100%)] transition hover:border-diesel/50 hover:shadow-[4px_4px_0_0_rgba(200,255,45,0.12)] md:text-[0.9rem]"
                   variants={listItem}
                 >
-                  <span className="mr-2 text-diesel/50 transition group-hover:text-amber-burst">
-                    ▸
-                  </span>
-                  {s}
+                  <Link to={`/desktop/services/${service.slug}`} className="block">
+                    <span className="mr-2 text-diesel/50 transition group-hover:text-amber-burst">
+                      ▸
+                    </span>
+                    {service.title}
+                  </Link>
                 </motion.li>
               ))}
             </motion.ul>
