@@ -20,6 +20,9 @@ const SERVICES = [
 const CONTACT_TEL = "+79620208822";
 const CONTACT_PHONE = "+7 962 020 88 22";
 const CONTACT_MAP_URL = "https://yandex.ru/maps/-/CPGirW8j";
+const CONTACT_MAP_EMBED_URL =
+  "https://yandex.ru/map-widget/v1/?mode=search&text=K-Diesel%20Kozyrev%20Service&z=13";
+const AUTOPLAY_FADEOUT_MS = 20_000;
 
 const viewOpts = { once: true, margin: "-8% 0px" as const, amount: 0.15 as const };
 const fadeUp = {
@@ -45,11 +48,11 @@ function SoundButton({
     <button
       type="button"
       onClick={onToggle}
-      className="fixed bottom-4 right-4 z-[10001] flex items-center gap-2 border border-bone/25 bg-void/55 px-3 py-2 font-mono text-[0.65rem] uppercase tracking-[0.16em] text-bone/65 backdrop-blur-sm transition hover:border-amber-burst/50 hover:text-amber-burst sm:bottom-6 sm:right-6"
+      className="fixed bottom-3 right-3 z-[10001] flex items-center gap-1.5 border border-bone/20 bg-void/45 px-2 py-1.5 font-mono text-[0.58rem] uppercase tracking-[0.14em] text-bone/55 backdrop-blur-sm transition hover:border-amber-burst/40 hover:text-amber-burst/90 sm:bottom-4 sm:right-4"
       aria-pressed={enabled}
       aria-label={enabled ? "Выключить звук" : "Включить звук"}
     >
-      <span className="text-xs">{enabled ? "🔊" : "🔇"}</span>
+      <span className="text-[0.62rem]">{enabled ? "🔊" : "🔇"}</span>
       <span>
         Звук {enabled ? "ON" : "OFF"}
       </span>
@@ -59,48 +62,86 @@ function SoundButton({
 
 function useAudio(soundEnabled: boolean, setSoundEnabled: (v: boolean) => void) {
   const ref = useRef<HTMLAudioElement | null>(null);
+  const fadeIntervalRef = useRef<number | null>(null);
+
+  const clearFade = useCallback(() => {
+    if (fadeIntervalRef.current !== null) {
+      window.clearInterval(fadeIntervalRef.current);
+      fadeIntervalRef.current = null;
+    }
+  }, []);
+
+  const startWithFadeout = useCallback(() => {
+    const a = ref.current;
+    if (!a || !soundEnabled) return;
+
+    a.muted = false;
+    a.volume = 0.5;
+    void a.play()
+      .then(() => {
+        const startAt = performance.now();
+        clearFade();
+
+        fadeIntervalRef.current = window.setInterval(() => {
+          const now = performance.now();
+          const progress = Math.min((now - startAt) / AUTOPLAY_FADEOUT_MS, 1);
+          const nextVolume = 0.5 * (1 - progress);
+          a.volume = Math.max(nextVolume, 0);
+
+          if (progress >= 1) {
+            clearFade();
+            a.pause();
+            a.currentTime = 0;
+            setSoundEnabled(false);
+          }
+        }, 250);
+      })
+      .catch(() => {
+        /* Browser can block autoplay with sound until first interaction */
+      });
+  }, [clearFade, setSoundEnabled, soundEnabled]);
 
   useEffect(() => {
     const a = ref.current;
     if (!a) return;
     a.muted = !soundEnabled;
-    a.volume = 0.5;
+    if (!soundEnabled) {
+      a.pause();
+      a.currentTime = 0;
+    }
   }, [soundEnabled]);
 
   useEffect(() => {
-    const a = ref.current;
-    if (!a) return;
-
-    const tryPlay = () => {
-      a.volume = 0.5;
-      a.muted = !soundEnabled;
-      void a.play().catch(() => {
-        /* Browser can block autoplay with sound until first user interaction */
-      });
+    const tryAutoplay = () => {
+      startWithFadeout();
     };
 
-    tryPlay();
-    window.addEventListener("pointerdown", tryPlay, { once: true });
-    window.addEventListener("keydown", tryPlay, { once: true });
+    tryAutoplay();
+    window.addEventListener("pointerdown", tryAutoplay, { once: true });
+    window.addEventListener("keydown", tryAutoplay, { once: true });
 
     return () => {
-      window.removeEventListener("pointerdown", tryPlay);
-      window.removeEventListener("keydown", tryPlay);
+      clearFade();
+      window.removeEventListener("pointerdown", tryAutoplay);
+      window.removeEventListener("keydown", tryAutoplay);
     };
-  }, []);
+  }, [clearFade, startWithFadeout]);
 
   const toggle = useCallback(() => {
     const a = ref.current;
     if (!a) return;
+
+    clearFade();
     const next = !soundEnabled;
     setSoundEnabled(next);
     a.muted = !next;
-    if (next && a.paused) {
+    if (next) {
+      a.volume = 0.5;
       void a.play().catch(() => {
-        /* If blocked, next user interaction will retry via listener above */
+        /* If blocked, browser will allow after interaction */
       });
     }
-  }, [setSoundEnabled, soundEnabled]);
+  }, [clearFade, setSoundEnabled, soundEnabled]);
 
   return { ref, toggle };
 }
@@ -214,9 +255,13 @@ function CtaBlock() {
           whileInView={{ opacity: 1, y: 0 }}
           transition={{ type: "spring" }}
           viewport={viewOpts}
-          className="font-[family-name:var(--font-display)] text-4xl tracking-tight text-amber-burst sm:text-5xl md:text-6xl"
+          className="font-[family-name:var(--font-display)] text-4xl tracking-[0.02em] text-amber-burst sm:text-5xl md:text-6xl"
         >
-          НАШ ПРИОРИТЕТ КАЧЕСТВО
+          <span className="inline-flex flex-wrap items-center justify-center gap-x-5 gap-y-1 sm:gap-x-8 md:gap-x-12">
+            <span>НАШ</span>
+            <span>ПРИОРИТЕТ</span>
+            <span>КАЧЕСТВО</span>
+          </span>
         </motion.h2>
         <motion.p
           initial={{ opacity: 0, y: 24 }}
@@ -225,7 +270,7 @@ function CtaBlock() {
           viewport={viewOpts}
           className="mt-4 font-mono text-bone/65"
         >
-          Звонок и визит — дальше разберём насос, форсунки и схему борта полностью.
+          Звонок, а дальше визит и беспокоиться больше не о чем.
         </motion.p>
         <motion.div
           initial={{ opacity: 0, y: 16 }}
@@ -263,14 +308,14 @@ function CtaBlock() {
           initial={{ opacity: 0, y: 18 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={viewOpts}
-          className="mx-auto mt-6 max-w-md overflow-hidden border-2 border-bone/20 bg-void/70"
+          className="mx-auto mt-6 max-w-sm overflow-hidden border-2 border-bone/20 bg-void/70"
         >
           <iframe
             title="Карта проезда K-Diesel"
-            src={CONTACT_MAP_URL}
+            src={CONTACT_MAP_EMBED_URL}
             loading="lazy"
             referrerPolicy="no-referrer-when-downgrade"
-            className="h-52 w-full"
+            className="h-40 w-full"
           />
         </motion.div>
       </div>
