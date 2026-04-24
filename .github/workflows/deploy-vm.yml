@@ -46,13 +46,14 @@ jobs:
           VM_PUBLIC_PATH: ${{ secrets.VM_PUBLIC_PATH }}
           VM_POST_DEPLOY: ${{ secrets.VM_POST_DEPLOY }}
           GITHUB_REF_NAME: ${{ github.ref_name }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
         with:
           host: ${{ secrets.VM_HOST }}
           username: ${{ secrets.VM_USER }}
           key: ${{ secrets.VM_SSH_KEY }}
           port: ${{ secrets.VM_PORT || '22' }}
           script_stop: true
-          envs: NODE_VERSION,VM_PATH,VM_PUBLIC_PATH,VM_POST_DEPLOY,GITHUB_REF_NAME
+          envs: NODE_VERSION,VM_PATH,VM_PUBLIC_PATH,VM_POST_DEPLOY,GITHUB_REF_NAME,GITHUB_REPOSITORY
           script: |
             set -euo pipefail
 
@@ -64,9 +65,34 @@ jobs:
               nvm use "$NODE_VERSION" >/dev/null
             fi
 
+            VM_PATH="$(printf '%s' "${VM_PATH:-}" | tr -d '\r')"
+            if [ -z "$VM_PATH" ]; then
+              echo "VM_PATH is empty after normalization"
+              exit 1
+            fi
+
+            REPO_SSH_URL="git@github.com:${GITHUB_REPOSITORY}.git"
+            PARENT_DIR="$(dirname "$VM_PATH")"
+            mkdir -p "$PARENT_DIR"
+
+            if [ ! -d "$VM_PATH/.git" ]; then
+              if [ -d "$VM_PATH" ] && [ "$(ls -A "$VM_PATH" 2>/dev/null)" ]; then
+                echo "VM_PATH exists and is not an empty git repo: $VM_PATH"
+                exit 1
+              fi
+              rm -rf "$VM_PATH"
+              git clone "$REPO_SSH_URL" "$VM_PATH"
+            fi
+
+            if [ ! -d "$VM_PATH" ]; then
+              echo "VM_PATH does not exist after setup: $VM_PATH"
+              exit 1
+            fi
+
             cd "$VM_PATH"
+            git remote set-url origin "$REPO_SSH_URL"
             git fetch --all --prune
-            git checkout "$GITHUB_REF_NAME"
+            git checkout -B "$GITHUB_REF_NAME" "origin/$GITHUB_REF_NAME"
             git pull --ff-only origin "$GITHUB_REF_NAME"
 
             npm ci
