@@ -9,7 +9,7 @@ export function MobileHomePage() {
     <>
       <main id="top" className="relative z-10 px-4 pb-14 pt-20">
         <section className="relative overflow-hidden border-2 border-bone/15 bg-void/75">
-          <video className="h-48 w-full object-cover opacity-65" autoPlay muted loop playsInline src="/hero.mp4" />
+          <video className="h-48 w-full object-contain opacity-65" autoPlay muted loop playsInline src="/hero.mp4" />
           <div className="absolute inset-0 bg-gradient-to-t from-void via-void/40 to-transparent" />
           <div className="absolute inset-x-3 bottom-3">
             <p className="font-mono text-[0.62rem] uppercase tracking-[0.26em] text-diesel/85">Kozyrev Service</p>

@@ -30,7 +30,7 @@ function VideoHero() {
     <div className="relative h-dvh min-h-[520px] w-full overflow-hidden">
       <div className="absolute inset-0 z-0 bg-void">
         <video
-          className="h-full w-full object-cover"
+          className="h-full w-full object-contain"
           autoPlay
           loop
           muted
